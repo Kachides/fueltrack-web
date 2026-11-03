@@ -728,6 +728,9 @@ function openShiftModal(id) {
   const leftBefore = shift ? (shift.fuelLeftBefore || 0) : (lastShift ? (lastShift.fuelLeft || 0) : 0);
   openModal(`
     <div class="modal-header"><div class="modal-title">${shift ? 'Редактировать смену' : 'Новая смена'}</div><button class="modal-close">×</button></div>
+    <div class="form-group"><label class="form-label">Автомобиль</label><select class="form-select" id="sh_vehicle">
+      ${state.vehicles.map(vv => `<option value="${vv.id}" ${ (shift?.vehicleId||v?.id)===vv.id?'selected':''}>${vv.name}</option>`).join('')}
+    </select></div>
     <div class="form-group"><label class="form-label">Дата</label><input class="form-input" id="sh_date" type="date" value="${shift?.date || today()}"></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Пробег начало (км)</label><input class="form-input" id="sh_start" type="number" value="${startOdo}" oninput="calcShift()"></div>
@@ -761,7 +764,8 @@ function calcShift() {
   if (el) el.innerHTML = `Пробег за смену: <b>${dist} км</b><br>Израсходовано (по норме): <b>${fmt(fuelUsed,2)} л</b><br>Остаток топлива: <b>${fmt(fuelLeft,2)} л</b><br>Итоговый пробег: <b>${end} км</b>${actualCons ? `<br>Фактический расход: <b>${fmt(actualCons,2)} л/100</b>` : ''}${fuelLeft < 0 ? `<br><span style="color:var(--danger)">⚠️ Не хватает ${fmt(Math.abs(fuelLeft),2)} л</span>` : ''}`;
 }
 function saveShift(id) {
-  const v = activeVehicle();
+  const vid = document.getElementById('sh_vehicle').value;
+  const v = state.vehicles.find(x=>x.id===vid) || activeVehicle();
   if (!v) { toast('Сначала добавьте автомобиль', 'error'); return; }
   const start = +document.getElementById('sh_start').value;
   const end = +document.getElementById('sh_end').value;
@@ -826,15 +830,21 @@ function firebaseSyncLoad() {
   const db = firebase.firestore();
   db.collection('shared').doc('state').get().then(doc => {
     if (doc.exists) {
-      Object.assign(state, doc.data());
-      saveState();
-      renderTab(currentTab);
-      toast('Данные загружены из облака', 'success');
+      const cloud = doc.data();
+      const localTs = state.updatedAt || 0;
+      const cloudTs = cloud.updatedAt || 0;
+      if (cloudTs > localTs) {
+        Object.assign(state, cloud);
+        saveState();
+        renderTab(currentTab);
+        toast('Данные загружены из облака', 'success');
+      }
     }
   });
 }
 function firebaseSyncSave() {
   if (!firebaseReady) return;
+  state.updatedAt = Date.now();
   const db = firebase.firestore();
   db.collection('shared').doc('state').set(JSON.parse(JSON.stringify(state)));
 }
@@ -846,7 +856,14 @@ if (firebaseReady) {
   });
 }
 const _origSaveState = saveState;
-saveState = function() { _origSaveState(); firebaseSyncSave(); };
+saveState = function() {
+  state.updatedAt = Date.now();
+  _origSaveState();
+  if (firebaseReady) {
+    const db = firebase.firestore();
+    db.collection('shared').doc('state').set(JSON.parse(JSON.stringify(state)));
+  }
+};
 
 window.firebaseSignIn = firebaseSignIn;
 window.firebaseSignOut = firebaseSignOut;
