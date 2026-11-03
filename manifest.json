@@ -1,0 +1,20 @@
+{
+  "name": "Fuel Tracker Pro",
+  "short_name": "FuelTrack",
+  "description": "Учёт топлива, расходов и обслуживания автомобиля",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "lang": "ru",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    { "name": "Добавить заправку", "short_name": "Заправка", "url": "./index.html#add-fuel", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Статистика", "short_name": "Статистика", "url": "./index.html#stats", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
